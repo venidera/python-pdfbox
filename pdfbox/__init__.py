@@ -1,23 +1,24 @@
-#!/usr/bin/python3
-
 """
-Python interface to Apache PDFBox.
+Copyright(C) Venidera Research & Development, Inc - All Rights Reserved
+Unauthorized copying of this file, via any medium is strictly prohibited
+Proprietary and confidential
+Written by Rafael Giordano Vieira <rafael@venidera.com>
 """
 
+import os
+import re
+import jpype
+import appdirs
+import pathlib
 import hashlib
 import html.parser
-import os
-import pathlib
-import re
-import shutil
-import urllib.request
-
-import appdirs
-import jpype
 import jpype.imports
 import pkg_resources
+import urllib.request
 
-pdfbox_archive_url = 'https://archive.apache.org/dist/pdfbox/'
+
+pdfbox_url = 'https://archive.apache.org/dist/pdfbox/2.0.20/pdfbox-app-2.0.20.jar'
+
 
 class _PDFBoxVersionsParser(html.parser.HTMLParser):
     """
@@ -63,25 +64,6 @@ class PDFBox(object):
 
         return hashlib.sha512(data).hexdigest() == digest
 
-    def _get_latest_pdfbox_url(self):
-        r = urllib.request.urlopen(pdfbox_archive_url)
-        try:
-            data = r.read()
-        except:
-            raise RuntimeError('error retrieving %s' % pdfbox_archive_url)
-        else:
-            data = data.decode('utf-8')
-        p = _PDFBoxVersionsParser()
-        p.feed(data)
-
-        # Temporarily disallow PDFBox 3 because of change in command line
-        # interface:
-        versions = list(filter(lambda v: pkg_resources.parse_version(v).major<3,
-                               p.result))
-        latest_version = sorted(versions, key=pkg_resources.parse_version)[-1]
-        return pdfbox_archive_url + latest_version + '/pdfbox-app-' + \
-            latest_version + '.jar'
-
     def _get_pdfbox_path(self):
         """
         Return path to local copy of PDFBox jar file.
@@ -108,7 +90,6 @@ class PDFBox(object):
         else:
             # If no jar files are cached, find the latest version jar, retrieve it,
             # cache it, and verify its checksum:
-            pdfbox_url = self._get_latest_pdfbox_url()
             sha512_url = pdfbox_url + '.sha512'
             r = urllib.request.urlopen(pdfbox_url)
             try:
